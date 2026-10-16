@@ -1,0 +1,21 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - QUEUE_BACKEND=redis
+      - REDIS_URL=redis://redis:6379/0
+      - STORAGE_BACKEND=local
+      - AI_MODEL_NAME=u2netp
+    volumes:
+      - ./backend/storage:/workspace/backend/storage
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"

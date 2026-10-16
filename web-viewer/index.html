@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>Pocket 3D Showcase — Studio Quản Lý & Khung Xoay 360° AI</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+</head>
+<body>
+  <!-- Top Navigation -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">360°</div>
+      <div>
+        <div class="brand-title">Pocket 3D Showcase Studio</div>
+        <div class="brand-subtitle">AI Background Removal • Global-Scale Auto-Centering • WebP 360° Packager</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div class="status-pill" id="healthBadge">
+        <span class="status-dot"></span>
+        <span id="healthText">AI Worker Ready</span>
+      </div>
+      <button type="button" class="btn btn-primary" id="openUploadModalBtn">
+        + Tải Ảnh / Video Bàn Xoay
+      </button>
+    </div>
+  </header>
+
+  <!-- Main 3-Column Studio Layout -->
+  <main class="studio-layout">
+    <!-- Left Sidebar: Demo Generator & Product Catalog -->
+    <aside class="sidebar-left">
+      <div>
+        <div class="section-header">
+          <span class="section-title">Tạo Nhanh Mẫu 360° (Test AI)</span>
+        </div>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
+          Sinh bộ 36 góc chụp có nền &amp; rung lắc giả lập để kiểm thử thuật toán Tách nền AI + Căn tâm chống nhảy hình:
+        </p>
+        <div class="preset-grid">
+          <button type="button" class="preset-btn" data-preset="sneaker">
+            <span class="preset-icon">👟</span>
+            <span class="preset-label">Sneaker 360°</span>
+          </button>
+          <button type="button" class="preset-btn" data-preset="watch">
+            <span class="preset-icon">⌚</span>
+            <span class="preset-label">Đồng hồ Cơ</span>
+          </button>
+          <button type="button" class="preset-btn" data-preset="figure">
+            <span class="preset-icon">🤖</span>
+            <span class="preset-label">Mô hình Figure</span>
+          </button>
+        </div>
+      </div>
+
+      <div style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+        <div class="section-header">
+          <span class="section-title">Danh Sách Sản Phẩm (<span id="productCount">0</span>)</span>
+          <button type="button" class="btn btn-sm btn-secondary" id="refreshListBtn">Làm mới</button>
+        </div>
+        <div class="product-list" id="productList">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Stage: Interactive 360° Canvas -->
+    <section class="stage-center">
+      <div class="stage-header">
+        <div>
+          <h1 id="activeProductTitle" style="font-size: 20px; font-weight: 700;">Đang tải sản phẩm...</h1>
+          <p id="activeProductDesc" style="font-size: 13px; color: var(--text-secondary);"></p>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-emerald" id="togglePinModeBtn">
+            📍 Gắn Điểm Nhấn (Hotspot)
+          </button>
+          <button type="button" class="btn btn-amber" id="openExportModalBtn">
+            🎬 Xuất Video MP4 / Link Chia Sẻ
+          </button>
+          <a href="#" target="_blank" class="btn btn-secondary" id="openPublicViewerLink">
+            🔗 Mở Trang Người Mua
+          </a>
+        </div>
+      </div>
+
+      <!-- 360° Canvas Viewport -->
+      <div class="viewer-container theme-dark" id="viewerContainer">
+        <!-- Top HUD -->
+        <div class="viewer-hud-top">
+          <div class="hud-badge" id="angleHudBadge">
+            <span>Góc: <strong id="angleValueText">0°</strong> (<span id="frameIndexText">1/36</span>)</span>
+          </div>
+          <div style="display: flex; gap: 6px; pointer-events: auto;">
+            <button type="button" class="hud-badge" id="compareModeBtn" style="cursor: pointer; border-color: rgba(56, 189, 248, 0.45);">
+              ✨ Đang xem: Đã Tách Nền &amp; Căn Tâm
+            </button>
+          </div>
+        </div>
+
+        <canvas id="spinCanvas" width="800" height="800"></canvas>
+        <div class="hotspot-layer" id="hotspotLayer"></div>
+
+        <!-- Active Hotspot Popover Card -->
+        <div class="hotspot-popover" id="hotspotPopover">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span class="badge badge-completed" id="popoverTagBadge">Chi tiết</span>
+            <button type="button" id="closePopoverBtn" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:15px;">✕</button>
+          </div>
+          <div id="popoverTitle" style="font-weight: 700; font-size: 14px; margin-bottom: 3px;"></div>
+          <div id="popoverDesc" style="font-size: 12.5px; color: #cbd5e1;"></div>
+        </div>
+
+        <!-- Bottom Controls HUD -->
+        <div class="viewer-hud-bottom">
+          <button type="button" class="hud-btn" id="autoSpinBtn">▶ Tự xoay</button>
+          <button type="button" class="hud-btn" id="zoomOutBtn">➖</button>
+          <span style="font-size: 11.5px; color: #94a3b8; min-width: 38px; text-align: center;" id="zoomLevelText">1.0x</span>
+          <button type="button" class="hud-btn" id="zoomInBtn">➕</button>
+          <button type="button" class="hud-btn" data-theme="theme-dark">Tối</button>
+          <button type="button" class="hud-btn" data-theme="theme-light">Trắng</button>
+          <button type="button" class="hud-btn" data-theme="theme-sand">Kem</button>
+          <button type="button" class="hud-btn" data-theme="theme-checker">Alpha</button>
+        </div>
+      </div>
+
+      <!-- Scrubber Slider -->
+      <div style="width: 100%; max-width: 640px; display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;">Kéo xoay 360°:</span>
+        <input type="range" id="frameScrubber" min="0" max="35" value="0" style="flex: 1; accent-color: var(--accent-primary); cursor: pointer;" />
+        <span style="font-size: 12px; color: var(--text-secondary);" id="loadSpeedLabel">Tải: -- ms</span>
+      </div>
+    </section>
+
+    <!-- Right Sidebar: NFR Telemetry, Hotspots & Public Link -->
+    <aside class="sidebar-right">
+      <div>
+        <div class="section-header">
+          <span class="section-title">Chỉ Số Kỹ Thuật (NFR-01 &amp; NFR-02)</span>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-label">Thời gian xử lý AI</div>
+            <div class="metric-value" id="metricTime">-- s</div>
+            <div class="metric-sub" id="metricTimeSub">Mục tiêu &lt; 15s</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Dung lượng gói WebP</div>
+            <div class="metric-value" id="metricSize">-- MB</div>
+            <div class="metric-sub" id="metricSizeSub">Mục tiêu &le; 3.0 MB</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Độ lệch tâm gốc (Jitter)</div>
+            <div class="metric-value" id="metricRawJitter">-- px</div>
+            <div class="metric-sub">Trước khi căn tâm</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Sau Auto-Centering</div>
+            <div class="metric-value" style="color: #34d399;">0.0 px</div>
+            <div class="metric-sub">Chuẩn hóa Global Scale</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hotspots Manager (FR-05) -->
+      <div>
+        <div class="section-header">
+          <span class="section-title">Điểm Nhấn Chi Tiết (Hotspots)</span>
+          <span class="badge badge-completed" id="hotspotCountBadge">0 điểm</span>
+        </div>
+        <p style="font-size: 11.5px; color: var(--text-secondary); margin-bottom: 8px;">
+          Bấm nút <strong>"📍 Gắn Điểm Nhấn"</strong> rồi click trực tiếp lên vị trí bất kỳ trên sản phẩm để thêm ghi chú chất liệu, kích thước hoặc vết xước.
+        </p>
+        <div class="hotspot-list" id="hotspotList"></div>
+      </div>
+
+      <!-- Share Link & Quick Export (FR-06) -->
+      <div>
+        <div class="section-header">
+          <span class="section-title">Link Rút Gọn Tĩnh (Zalo / Facebook)</span>
+        </div>
+        <div class="share-box">
+          <span id="shortLinkText" style="flex: 1;">http://localhost:8000/s/...</span>
+          <button type="button" class="btn btn-sm btn-primary" id="copyShortLinkBtn">Copy</button>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <a href="#" target="_blank" class="btn btn-sm btn-secondary" id="downloadIndexJsonBtn" style="flex: 1;">
+            📄 Xem index.json
+          </a>
+          <button type="button" class="btn btn-sm btn-secondary" id="deleteProductBtn" style="color: #f43f5e;">
+            🗑 Xóa
+          </button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Modal 1: Upload Multi-Angle Images or Turntable Video (FR-01, FR-03) -->
+  <dialog id="uploadDialog" closedby="any" aria-labelledby="uploadDialogTitle">
+    <div class="dialog-header">
+      <h2 class="dialog-title" id="uploadDialogTitle">Tạo Sản Phẩm 360° Mới (FR-01 / FR-03)</h2>
+      <button type="button" class="btn btn-sm btn-secondary" data-close-dialog="uploadDialog">✕</button>
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+      <button type="button" class="btn btn-primary" id="tabTurntableBtn" style="flex: 1;">
+        🎥 Chế độ Bàn xoay (Video 10-12s)
+      </button>
+      <button type="button" class="btn btn-secondary" id="tabManualImagesBtn" style="flex: 1;">
+        📸 Chế độ Bộ ảnh (24/36 Góc)
+      </button>
+    </div>
+
+    <form id="uploadForm">
+      <input type="hidden" id="uploadModeInput" value="video" />
+      <div class="form-group">
+        <label class="form-label" for="prodNameInput">Tên sản phẩm</label>
+        <input type="text" id="prodNameInput" class="form-input" placeholder="VD: Giày Nike Jordan 1 High Chicago" required />
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="form-group">
+          <label class="form-label" for="prodCategoryInput">Danh mục</label>
+          <input type="text" id="prodCategoryInput" class="form-input" value="Sneakers / Phụ kiện" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="prodTargetFrames">Số góc độ chuẩn hóa</label>
+          <select id="prodTargetFrames" class="form-select">
+            <option value="36" selected>36 góc độ (Mượt nhất - Mỗi 10°)</option>
+            <option value="24">24 góc độ (Siêu nhẹ - Mỗi 15°)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="prodDescInput">Mô tả ngắn</label>
+        <textarea id="prodDescInput" class="form-textarea" rows="2" placeholder="Ghi chú chất liệu, kích cỡ, tình trạng sản phẩm..."></textarea>
+      </div>
+
+      <div class="form-group" id="videoInputGroup">
+        <label class="form-label" for="videoFileInput">Chọn file Video Bàn xoay (.mp4, .mov, .webm)</label>
+        <input type="file" id="videoFileInput" class="form-input" accept="video/*" />
+      </div>
+
+      <div class="form-group" id="imagesInputGroup" style="display: none;">
+        <label class="form-label" for="imageFilesInput">Chọn danh sách ảnh đa góc độ (tối thiểu 4 ảnh, khuyến nghị 24–36 ảnh)</label>
+        <input type="file" id="imageFilesInput" class="form-input" accept="image/*" multiple />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="aiModeSelect">Engine AI Tách Nền (FR-04)</label>
+        <select id="aiModeSelect" class="form-select">
+          <option value="auto" selected>Tự động tối ưu (ONNX RemBG / Studio Alpha Matting &lt; 10s)</option>
+          <option value="studio_seg">Studio Alpha Matting Siêu Tốc (~2 giây / 36 ảnh)</option>
+          <option value="rembg">ONNX Runtime RemBG (u2netp)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+        <button type="button" class="btn btn-secondary" data-close-dialog="uploadDialog">Hủy</button>
+        <button type="submit" class="btn btn-primary" id="submitUploadBtn">🚀 Đẩy vào Hàng đợi AI</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Modal 2: Create Hotspot Dialog (FR-05) -->
+  <dialog id="hotspotDialog" closedby="any" aria-labelledby="hotspotDialogTitle">
+    <div class="dialog-header">
+      <h2 class="dialog-title" id="hotspotDialogTitle">Gắn Điểm Nhấn Chi Tiết (Hotspot)</h2>
+      <button type="button" class="btn btn-sm btn-secondary" data-close-dialog="hotspotDialog">✕</button>
+    </div>
+    <form id="hotspotForm">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="form-group">
+          <label class="form-label">Góc khung hình (Frame)</label>
+          <input type="text" id="hsFrameDisplay" class="form-input" readonly />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="hsTypeSelect">Phân loại nhãn</label>
+          <select id="hsTypeSelect" class="form-select">
+            <option value="material">Chất liệu (Material)</option>
+            <option value="dimension">Kích thước (Dimension)</option>
+            <option value="detail">Chi tiết đặc biệt (Detail)</option>
+            <option value="defect">Tình trạng / Lỗi nhỏ (2hand)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="hsTitleInput">Tiêu đề điểm nhấn</label>
+        <input type="text" id="hsTitleInput" class="form-input" placeholder="VD: Da lộn Suede nguyên bản / Vết xước 2mm" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="hsDescInput">Mô tả chi tiết</label>
+        <textarea id="hsDescInput" class="form-textarea" rows="3" placeholder="Giải thích chi tiết cho người mua khi bấm vào điểm này..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary" data-close-dialog="hotspotDialog">Hủy</button>
+        <button type="submit" class="btn btn-emerald">Lưu Điểm Nhấn</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Modal 3: Export MP4 Video & Share Link (FR-06) -->
+  <dialog id="exportDialog" closedby="any" aria-labelledby="exportDialogTitle">
+    <div class="dialog-header">
+      <h2 class="dialog-title" id="exportDialogTitle">Xuất Video MP4 &amp; Chia Sẻ Đa Nền Tảng (FR-06)</h2>
+      <button type="button" class="btn btn-sm btn-secondary" data-close-dialog="exportDialog">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">tỷ lệ khung hình Video</label>
+      <select id="exportAspectSelect" class="form-select">
+        <option value="9:16" selected>📱 9:16 Dọc (720x1280 — Chuẩn TikTok Shop / Shopee Video / Reels)</option>
+        <option value="1:1">⬛ 1:1 Vuông (800x800 — Chuẩn Facebook / Instagram / Bài đăng Shopee)</option>
+      </select>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div class="form-group">
+        <label class="form-label" for="exportThemeSelect">Phông nền Studio</label>
+        <select id="exportThemeSelect" class="form-select">
+          <option value="studio_dark" selected>Studio Dark Sang Trọng</option>
+          <option value="studio_light">Studio Trắng Tinh Khiết</option>
+          <option value="warm_sand">Kem Warm Sand</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="exportLoopsSelect">Số vòng xoay</label>
+        <select id="exportLoopsSelect" class="form-select">
+          <option value="2" selected>2 vòng xoay (6 giây)</option>
+          <option value="3">3 vòng xoay (9 giây)</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="button" class="btn btn-primary btn-block" id="runMp4ExportBtn">
+      🎬 Kết xuất Video MP4 Ngay
+    </button>
+
+    <div id="mp4ResultBox" style="display: none; margin-top: 16px; padding: 12px; background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.4);">
+      <div style="font-size: 13px; font-weight: 700; color: #34d399; margin-bottom: 8px;">
+        ✅ Đã kết xuất Video MP4 thành công!
+      </div>
+      <video id="mp4PreviewVideo" controls loop muted playsinline style="width: 100%; max-height: 260px; border-radius: 8px; background: #000;"></video>
+      <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+        <a href="#" download class="btn btn-emerald btn-sm" id="downloadMp4Link">⬇ Tải file MP4 về máy</a>
+      </div>
+    </div>
+  </dialog>
+
+  <script type="module" src="/assets/js/studio.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.env
+backend/storage/products/
+backend/storage/uploads/
+backend/storage/*.sqlite3
+backend/storage/*.sqlite3-journal
+
+# Word / Office temporary lock files
+~$*.docx
+~$*.xlsx
+~$*.pptx
+
+# Flutter / Mobile
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/build/
+mobile/ios/Flutter/.last_build_id
+
+# Node / Web
+node_modules/
+.DS_Store
+Thumbs.db

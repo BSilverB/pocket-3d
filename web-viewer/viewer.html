@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=no" />
+  <title>__OG_TITLE__</title>
+  <meta property="og:title" content="__OG_TITLE__" />
+  <meta property="og:description" content="__OG_DESCRIPTION__" />
+  <meta property="og:image" content="__OG_IMAGE__" />
+  <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <style>
+    body {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: radial-gradient(circle at 50% 38%, #1a2540 0%, #090d16 80%);
+    }
+    .buyer-shell {
+      flex: 1;
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: space-between;
+    }
+    .buyer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: rgba(17, 24, 39, 0.78);
+      backdrop-filter: blur(10px);
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+    }
+    .hotspot-chips {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .hotspot-chip {
+      background: rgba(30, 41, 59, 0.9);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #f8fafc;
+      padding: 7px 13px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .hotspot-chip:hover {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+    }
+  </style>
+</head>
+<body data-product-id="__INITIAL_PRODUCT_ID__">
+  <div class="buyer-shell">
+    <header class="buyer-header">
+      <div>
+        <div style="font-size: 11px; color: #38bdf8; font-weight: 700; text-transform: uppercase;">
+          Pocket 3D Showcase • Interactive 360°
+        </div>
+        <h1 id="buyerTitle" style="font-size: 17px; font-weight: 700;">Đang tải khung 360°...</h1>
+        <p id="buyerCategory" style="font-size: 12px; color: #94a3b8;"></p>
+      </div>
+      <div class="status-pill" id="buyerLoadBadge">
+        <span class="status-dot"></span>
+        <span id="buyerLoadText">360° HD</span>
+      </div>
+    </header>
+
+    <div class="viewer-container theme-dark" id="viewerContainer" style="margin: 0 auto;">
+      <div class="viewer-hud-top">
+        <div class="hud-badge">
+          <span>🔄 Vuốt ngang để xoay 360° • <strong id="buyerAngleText">0°</strong></span>
+        </div>
+      </div>
+
+      <canvas id="spinCanvas" width="800" height="800"></canvas>
+      <div class="hotspot-layer" id="hotspotLayer"></div>
+
+      <div class="hotspot-popover" id="hotspotPopover">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span class="badge badge-completed" id="popoverTagBadge">Chi tiết</span>
+          <button type="button" id="closePopoverBtn" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:15px;">✕</button>
+        </div>
+        <div id="popoverTitle" style="font-weight: 700; font-size: 14px; margin-bottom: 3px;"></div>
+        <div id="popoverDesc" style="font-size: 12.5px; color: #cbd5e1;"></div>
+      </div>
+
+      <div class="viewer-hud-bottom">
+        <button type="button" class="hud-btn" id="autoSpinBtn">▶ Tự xoay</button>
+        <button type="button" class="hud-btn" id="zoomOutBtn">➖</button>
+        <span style="font-size: 11.5px; color: #94a3b8; min-width: 36px; text-align: center;" id="zoomText">1.0x</span>
+        <button type="button" class="hud-btn" id="zoomInBtn">➕</button>
+        <button type="button" class="hud-btn" data-theme="theme-dark">Nền Tối</button>
+        <button type="button" class="hud-btn" data-theme="theme-light">Nền Sáng</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="hotspot-chips" id="hotspotChips"></div>
+      <p id="buyerDesc" style="font-size: 12.5px; color: #94a3b8; margin-top: 6px; text-align: center;"></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { SpinViewer360 } from "/assets/js/spin-viewer.js";
+
+    const viewer = new SpinViewer360({
+      canvas: document.getElementById("spinCanvas"),
+      hotspotLayer: document.getElementById("hotspotLayer"),
+      onFrameChange: (idx, total) => {
+        const deg = Math.round((idx / Math.max(1, total)) * 360);
+        document.getElementById("buyerAngleText").textContent = `${deg}°`;
+      },
+      onLoadProgress: (loaded, total, ms) => {
+        const el = document.getElementById("buyerLoadText");
+        if (loaded === total) {
+          el.textContent = `${total} Góc • ${Math.round(ms)}ms`;
+        } else {
+          el.textContent = `${loaded}/${total}`;
+        }
+      },
+      onHotspotSelect: (hs) => showPopover(hs),
+    });
+
+    function showPopover(hs) {
+      const pop = document.getElementById("hotspotPopover");
+      document.getElementById("popoverTitle").textContent = hs.title;
+      document.getElementById("popoverDesc").textContent = hs.description || "";
+      pop.classList.add("visible");
+    }
+
+    document.getElementById("closePopoverBtn").addEventListener("click", () => {
+      document.getElementById("hotspotPopover").classList.remove("visible");
+    });
+
+    document.getElementById("autoSpinBtn").addEventListener("click", (e) => {
+      const next = !viewer.autoSpin;
+      viewer.setAutoSpin(next);
+      e.currentTarget.classList.toggle("active", next);
+      e.currentTarget.textContent = next ? "⏸ Dừng" : "▶ Tự xoay";
+    });
+
+    document.getElementById("zoomInBtn").addEventListener("click", () => {
+      viewer.setZoom(viewer.zoom + 0.35);
+      document.getElementById("zoomText").textContent = `${viewer.zoom.toFixed(1)}x`;
+    });
+
+    document.getElementById("zoomOutBtn").addEventListener("click", () => {
+      viewer.setZoom(viewer.zoom - 0.35);
+      document.getElementById("zoomText").textContent = `${viewer.zoom.toFixed(1)}x`;
+    });
+
+    document.querySelectorAll("[data-theme]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const theme = btn.getAttribute("data-theme");
+        const c = document.getElementById("viewerContainer");
+        c.classList.remove("theme-dark", "theme-light");
+        c.classList.add(theme);
+      });
+    });
+
+    async function boot() {
+      let prodId = document.body.getAttribute("data-product-id");
+      if (!prodId || prodId.includes("__")) {
+        const parts = window.location.pathname.split("/").filter(Boolean);
+        prodId = parts[parts.length - 1];
+      }
+      const res = await fetch(`/api/products/${prodId}`);
+      if (!res.ok) {
+        document.getElementById("buyerTitle").textContent = "Không tìm thấy sản phẩm 360°";
+        return;
+      }
+      const prod = await res.json();
+      document.getElementById("buyerTitle").textContent = prod.name;
+      document.getElementById("buyerCategory").textContent = `${prod.category} • Gói siêu nhẹ ${prod.package_size_mb} MB`;
+      document.getElementById("buyerDesc").textContent = prod.description || "";
+
+      const chipsEl = document.getElementById("hotspotChips");
+      (prod.hotspots || []).forEach((hs, i) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "hotspot-chip";
+        chip.textContent = `📍 #${i + 1} ${hs.title}`;
+        chip.addEventListener("click", () => {
+          viewer.rotateToFrame(hs.frame_index);
+          showPopover(hs);
+        });
+        chipsEl.appendChild(chip);
+      });
+
+      await viewer.loadProduct(prod);
+    }
+
+    boot();
+  </script>
+</body>
+</html>
